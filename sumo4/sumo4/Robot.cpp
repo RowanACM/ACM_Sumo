@@ -112,7 +112,7 @@ class Robot{
     }
     void attack(){
       //While attacking account for opponent robot movement to adjust to directly hit the opponent.
-      int deriv = 10; //to adjust intensity of motors offset for a turn
+      int deriv = 50; //to adjust intensity of motors offset for a turn
       //Maybe we should use raw proximity sensor values if we can?
       //Maybe we don't even need to use shitty prox sensors since the kit competition has already passed?
       leftReading = proxSensors.countsFrontWithLeftLeds();
