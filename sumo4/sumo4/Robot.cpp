@@ -6,6 +6,12 @@ class Robot{
     int lineReadings[3];
     int leftReading;
     int rightReading;
+    uint32_t turnAngle = 0;
+    uint32_t currentHeading = 0;
+    uint32_t heading;
+    int16_t turnRate;
+    int16_t gyroOffset;
+    uint16_t gyroLastUpdate = 0;
     const int MAX_SPEED = 400;
   public:
     enum class State {init, wait, search, attack, evade, atLine};
@@ -16,6 +22,7 @@ class Robot{
     Zumo32U4ButtonB buttonB;
     Zumo32U4LineSensors lineSensors;
     Zumo32U4LCD lcd;
+    L3G gyro;
 
     Timer waitTimer;
     Timer turnTimer;
@@ -106,7 +113,7 @@ class Robot{
     }
     void search(){
       motors.setSpeeds(100,300);
-      if(leftReading > 2 || rightReading > 2){
+      if(leftReading > 1 || rightReading > 1){
          state = State::attack;
       }
     }
@@ -134,5 +141,94 @@ class Robot{
     }
     void displayProx(){
       Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
+    }
+    void updateDirection()
+    {
+      turnSensorSetup();
+      turnSensorReset();
+      turnSensorUpdate();
+      heading += turnAngle;
+    }
+    void turnSensorSetup()
+    {
+      Wire.begin();
+      gyro.init();
+    
+      // 800 Hz output data rate,
+      // low-pass filter cutoff 100 Hz
+      gyro.writeReg(L3G::CTRL1, 0b11111111);
+    
+      // 2000 dps full scale
+      gyro.writeReg(L3G::CTRL4, 0b00100000);
+    
+      // High-pass filter disabled
+      gyro.writeReg(L3G::CTRL5, 0b00000000);
+    
+      lcd.clear();
+      lcd.print(F("Gyro cal"));
+    
+      // Turn on the yellow LED in case the LCD is not available.
+      ledYellow(1);
+    
+      // Delay to give the user time to remove their finger.
+      delay(500);
+    
+      // Calibrate the gyro.
+      int32_t total = 0;
+      for (uint16_t i = 0; i < 1024; i++)
+      {
+        // Wait for new data to be available, then read it.
+        while(!gyro.readReg(L3G::STATUS_REG) & 0x08);
+        gyro.read();
+    
+        // Add the Z axis reading to the total.
+        total += gyro.g.z;
+      }
+      ledYellow(0);
+      gyroOffset = total / 1024;
+    
+      // Display the angle (in degrees from -180 to 180) until the
+      // user presses A.
+      lcd.clear();
+      turnSensorReset();
+      while (!buttonA.getSingleDebouncedRelease())
+      {
+        turnSensorUpdate();
+        lcd.gotoXY(0, 0);
+        lcd.print((((int32_t)turnAngle >> 16) * 360) >> 16);
+        lcd.print(F("   "));
+      }
+      lcd.clear();
+    }
+    void turnSensorReset()
+    {
+      gyroLastUpdate = micros();
+      turnAngle = 0;
+    }
+    void turnSensorUpdate()
+    {
+      // Read the measurements from the gyro.
+      gyro.read();
+      turnRate = gyro.g.z - gyroOffset;
+    
+      // Figure out how much time has passed since the last update (dt)
+      uint16_t m = micros();
+      uint16_t dt = m - gyroLastUpdate;
+      gyroLastUpdate = m;
+    
+      // Multiply dt by turnRate in order to get an estimation of how
+      // much the robot has turned since the last update.
+      // (angular change = angular velocity * time)
+      int32_t d = (int32_t)turnRate * dt;
+    
+      // The units of d are gyro digits times microseconds.  We need
+      // to convert those to the units of turnAngle, where 2^29 units
+      // represents 45 degrees.  The conversion from gyro digits to
+      // degrees per second (dps) is determined by the sensitivity of
+      // the gyro: 0.07 degrees per second per digit.
+      //
+      // (0.07 dps/digit) * (1/1000000 s/us) * (2^29/45 unit/degree)
+      // = 14680064/17578125 unit/(digit*us)
+      turnAngle += (int64_t)d * 14680064 / 17578125;
     }
 };
