@@ -6,6 +6,7 @@ class Robot{
     int lineReadings[3];
     int leftReading;
     int rightReading;
+    const int MAX_SPEED = 400;
   public:
     enum class State {init, wait, search, attack, evade, atLine};
     State state = State::init;
@@ -110,10 +111,28 @@ class Robot{
       }
     }
     void attack(){
-      motors.setSpeeds(300,300);
+      //While attacking account for opponent robot movement to adjust to directly hit the opponent.
+      int deriv = 10; //to adjust intensity of motors offset for a turn
+      //Maybe we should use raw proximity sensor values if we can?
+      //Maybe we don't even need to use shitty prox sensors since the kit competition has already passed?
+      leftReading = proxSensors.countsFrontWithLeftLeds();
+      rightReading = proxSensors.countsFrontWithRightLeds();
+      if(leftReading < rightReading)
+      {
+        int rightMotorSpeed = (((leftReading - rightReading)*deriv) + MAX_SPEED);
+        motors.setSpeeds(MAX_SPEED , rightMotorSpeed);
+      }
+      else if(leftReading > rightReading)
+      {
+        int leftMotorSpeed = (((rightReading - leftReading)*deriv) + MAX_SPEED);
+        motors.setSpeeds(leftMotorSpeed , MAX_SPEED);
+      }
+      else if(leftReading == rightReading)
+      {
+        motors.setSpeeds(MAX_SPEED , MAX_SPEED);
+      }
     }
     void displayProx(){
       Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
     }
 };
-
