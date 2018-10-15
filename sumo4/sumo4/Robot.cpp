@@ -113,7 +113,7 @@ class Robot{
     }
     void search(){
       motors.setSpeeds(100,300);
-      if(leftReading > 1 || rightReading > 1){
+      if(leftReading > 2 || rightReading > 2){
          state = State::attack;
       }
     }
