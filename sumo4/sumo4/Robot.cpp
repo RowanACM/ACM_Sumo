@@ -6,9 +6,8 @@ class Robot{
     int lineReadings[3];
     int leftReading;
     int rightReading;
-    uint32_t turnAngle = 0;
+    uint32_t turnAngle;
     uint32_t currentHeading = 0;
-    uint32_t heading;
     int16_t turnRate;
     int16_t gyroOffset;
     uint16_t gyroLastUpdate = 0;
@@ -31,15 +30,18 @@ class Robot{
     void update(){
       lineSensors.readCalibrated(lineReadings);
       proxSensors.read();
+      turnSensorUpdate();
       leftReading = proxSensors.countsFrontWithLeftLeds();
       rightReading = proxSensors.countsFrontWithRightLeds();
+      Serial.print((((int32_t)turnAngle >> 16) * 360) >> 16);
+      Serial.print(" ");
     }
     void init(){
       proxSensors.initThreeSensors();
       lineSensors.initThreeSensors();
       Serial.begin(9600);
-      //turnSensorSetup();
-      //Serial.print("Setup Complete - Waiting for Button");
+      turnSensorSetup();
+      Serial.print("Setup Complete - Waiting for Button");
       ledRed(1);
       state = State::wait;
     }
@@ -141,13 +143,6 @@ class Robot{
     }
     void displayProx(){
       Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
-    }
-    void updateDirection()
-    {
-      turnSensorSetup();
-      turnSensorReset();
-      turnSensorUpdate();
-      heading += turnAngle;
     }
     void turnSensorSetup()
     {
