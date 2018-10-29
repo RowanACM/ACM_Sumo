@@ -7,8 +7,11 @@ class Robot{
     int leftReading;
     int rightReading;
     uint32_t turnAngle;
-    uint32_t currentHeading = 0;
+    uint32_t readableHeading;
+    uint32_t heading360;
     int16_t turnRate;
+    const int32_t turnAngle45 = 0x20000000;
+    const int32_t turnAngle180 = turnAngle45*4;
     int16_t gyroOffset;
     uint16_t gyroLastUpdate = 0;
     const int MAX_SPEED = 400;
@@ -31,9 +34,12 @@ class Robot{
       lineSensors.readCalibrated(lineReadings);
       proxSensors.read();
       turnSensorUpdate();
+      calculate360degreeheading();
       leftReading = proxSensors.countsFrontWithLeftLeds();
       rightReading = proxSensors.countsFrontWithRightLeds();
-      Serial.print((((int32_t)turnAngle >> 16) * 360) >> 16);
+      Serial.print(((((int32_t)turnAngle >> 16) * 360) >> 16));
+      Serial.print(" ");
+      Serial.print(heading360);
       Serial.print(" ");
     }
     void init(){
@@ -97,8 +103,35 @@ class Robot{
         }
       }
     }
+    void calculate360degreeheading()
+    {
+      if(readableHeading < 0)
+      {
+        heading360 = 180-readableHeading;
+      }
+      else
+      {
+        heading360 = 180+readableHeading;
+      }
+    }
     void turn180deg(){
-      turnTimer.startTimerC();
+      const uint32_t initialHeading = heading360;
+      uint32_t toHeading = 0;     
+      if(heading360 != toHeading)
+      {
+        if(initialHeading + 180 > 359)
+        {
+          toHeading = initialHeading + 180 - 360;
+        }
+        else
+        {
+          toHeading = initialHeading + 180;
+        }
+        turnSensorUpdate();
+        motors.setSpeeds(-400,400);
+      }
+      state = State::search;
+      /*turnTimer.startTimerC();
       if(turnTimer.timeElapsed() < 100){
         motors.setSpeeds(-400,-400);
       }
@@ -111,7 +144,7 @@ class Robot{
       else{
         turnTimer.reset();
         state = State::search;
-      }
+      }**/
     }
     void search(){
       motors.setSpeeds(100,300);
@@ -225,5 +258,7 @@ class Robot{
       // (0.07 dps/digit) * (1/1000000 s/us) * (2^29/45 unit/degree)
       // = 14680064/17578125 unit/(digit*us)
       turnAngle += (int64_t)d * 14680064 / 17578125;
+      readableHeading = (((int32_t)turnAngle >> 16) * 360) >> 16;
+      calculate360degreeheading();
     }
 };
