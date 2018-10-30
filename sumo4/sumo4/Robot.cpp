@@ -114,22 +114,26 @@ class Robot{
         heading360 = 180+readableHeading;
       }
     }
-    void turn180deg(){
+    void turnDeg(uint32_t turn){
       const uint32_t initialHeading = heading360;
-      uint32_t toHeading = 0;     
-      if(heading360 != toHeading)
-      {
-        if(initialHeading + 180 > 359)
+      uint32_t toHeading = 0;
+      //go backwards a little bit before turning
+      //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
+      //motors.setSpeeds(-300,-300);
+      //delay(200);
+        if(heading360 != toHeading)
         {
-          toHeading = initialHeading + 180 - 360;
+          if(initialHeading + turn > 359)
+          {
+            toHeading = initialHeading + turn - 360;
+          }
+          else
+          {
+            toHeading = initialHeading + turn;
+          }
+          turnSensorUpdate();
+          motors.setSpeeds(-400,400);
         }
-        else
-        {
-          toHeading = initialHeading + 180;
-        }
-        turnSensorUpdate();
-        motors.setSpeeds(-400,400);
-      }
       state = State::search;
       /*turnTimer.startTimerC();
       if(turnTimer.timeElapsed() < 100){
@@ -145,6 +149,12 @@ class Robot{
         turnTimer.reset();
         state = State::search;
       }**/
+    }
+    void gambit()
+    {
+      motors.setSpeeds(400,400);
+      delay(300);
+      turnDeg(180);
     }
     void search(){
       motors.setSpeeds(100,300);

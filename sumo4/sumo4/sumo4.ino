@@ -27,7 +27,7 @@ void loop() {
       robot.wait();
       break;
     case Robot::State::atLine:
-      robot.turn180deg();
+      robot.turnDeg(180);
       break;
     case Robot::State::search:
       robot.search();
