@@ -40,8 +40,6 @@ class Robot{
       Serial.print(((((int32_t)turnAngle >> 16) * 360) >> 16));
       Serial.print(" ");
       Serial.print(heading360);
-      lcd.gotoXY(0,1);
-      lcd.print(heading360);
       Serial.print(" ");
     }
     void init(){
@@ -160,7 +158,7 @@ class Robot{
     }
     void search(){
       motors.setSpeeds(100,300);
-      if(leftReading > 4 || rightReading > 4){
+      if(leftReading > 2 || rightReading > 2){
          state = State::attack;
       }
     }
