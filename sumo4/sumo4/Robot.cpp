@@ -40,6 +40,8 @@ class Robot{
       Serial.print(((((int32_t)turnAngle >> 16) * 360) >> 16));
       Serial.print(" ");
       Serial.print(heading360);
+      lcd.gotoXY(0,1);
+      lcd.print(heading360);
       Serial.print(" ");
     }
     void init(){
@@ -158,13 +160,13 @@ class Robot{
     }
     void search(){
       motors.setSpeeds(100,300);
-      if(leftReading > 2 || rightReading > 2){
+      if(leftReading > 4 || rightReading > 4){
          state = State::attack;
       }
     }
     void attack(){
       //While attacking account for opponent robot movement to adjust to directly hit the opponent.
-      int deriv = 50; //to adjust intensity of motors offset for a turn
+      int deriv = 80; //to adjust intensity of motors offset for a turn
       //Maybe we should use raw proximity sensor values if we can?
       //Maybe we don't even need to use shitty prox sensors since the kit competition has already passed?
       leftReading = proxSensors.countsFrontWithLeftLeds();
