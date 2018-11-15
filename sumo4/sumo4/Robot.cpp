@@ -15,6 +15,8 @@ class Robot{
     int16_t gyroOffset;
     uint16_t gyroLastUpdate = 0;
     const int MAX_SPEED = 400;
+    boolean firstAtLineFlag;
+    Timer atLineTimer;
   public:
     enum class State {init, wait, search, attack, evade, atLine};
     State state = State::init;
@@ -50,6 +52,7 @@ class Robot{
       Serial.print("Setup Complete - Waiting for Button");
       ledRed(1);
       state = State::wait;
+      firstAtLineFlag = false;
     }
     void calibrateLineSensors(){
       ledYellow(1);
@@ -114,6 +117,14 @@ class Robot{
         heading360 = 180+readableHeading;
       }
     }
+    void atLine(){
+      atLineTimer.startTimerC();
+      if(atLineTimer.timeElapsed() < 100){
+        motors.setSpeeds(-400,-400);
+        return;
+      }
+      turnDeg(180);
+    }
     void turnDeg(uint32_t turn){
       const uint32_t initialHeading = heading360;
       uint32_t toHeading = 0;
@@ -135,6 +146,7 @@ class Robot{
           motors.setSpeeds(-400,400);
         }
       state = State::search;
+      
       /*turnTimer.startTimerC();
       if(turnTimer.timeElapsed() < 100){
         motors.setSpeeds(-400,-400);
