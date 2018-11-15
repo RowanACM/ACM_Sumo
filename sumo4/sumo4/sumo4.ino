@@ -36,5 +36,4 @@ void loop() {
       robot.attack();
       break;
   }
-  robot.displayProx();
 }

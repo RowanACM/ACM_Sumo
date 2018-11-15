@@ -3,7 +3,7 @@
 #include "TurnSensor.h"
 #include "Timer.h"
 class Robot{
-    int lineReadings[3];
+    int lineReadings[5];
     int leftReading;
     int rightReading;
     uint32_t turnAngle;
@@ -44,7 +44,7 @@ class Robot{
     }
     void init(){
       proxSensors.initThreeSensors();
-      lineSensors.initThreeSensors();
+      lineSensors.initFiveSensors();
       Serial.begin(9600);
       turnSensorSetup();
       Serial.print("Setup Complete - Waiting for Button");
@@ -96,7 +96,7 @@ class Robot{
       }
     }
     void checkLine(){
-      if(lineReadings[0] < 50 || lineReadings[1] < 50 || lineReadings[2] < 50){
+      if(lineReadings[0] < 50 || lineReadings[2] < 50 || lineReadings[4] < 50){
         if(state != State::init && state != State::wait){
           turnTimer.reset();
           state = State::atLine;
