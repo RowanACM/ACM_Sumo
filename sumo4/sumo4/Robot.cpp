@@ -117,13 +117,18 @@ class Robot{
         heading360 = 180+readableHeading;
       }
     }
+    void atLineFinish(Robot::State s)
+    {
+      atLineTimer.reset();
+      state = s;   
+    }
     void atLine(){
       atLineTimer.startTimerC();
-      if(atLineTimer.timeElapsed() < 100){
+      if(atLineTimer.timeElapsed() < 175){
         motors.setSpeeds(-400,-400);
         return;
       }
-      turnDeg(180);
+      turnDeg(100);
     }
     void turnDeg(uint32_t turn){
       const uint32_t initialHeading = heading360;
@@ -132,7 +137,7 @@ class Robot{
       //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
       //motors.setSpeeds(-300,-300);
       //delay(200);
-        if(heading360 != toHeading)
+        while(heading360 != toHeading)
         {
           if(initialHeading + turn > 359)
           {
@@ -164,15 +169,14 @@ class Robot{
     }
     void gambit()
     {
-      motors.setSpeeds(400,400);
-      delay(300);
-      turnDeg(180);
+      
     }
     void search(){
-      motors.setSpeeds(100,300);
-      if(leftReading > 2 || rightReading > 2){
+      motors.setSpeeds(200,400);
+      if(leftReading > 1 || rightReading > 1){
          state = State::attack;
       }
+      atLineTimer.reset();
     }
     void attack(){
       //While attacking account for opponent robot movement to adjust to directly hit the opponent.
