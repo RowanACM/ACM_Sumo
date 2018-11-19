@@ -3,16 +3,20 @@
 #include "TurnSensor.h"
 #include "Timer.h"
 class Robot{
-    int lineReadings[3];
+    int lineReadings[5];
     int leftReading;
     int rightReading;
-    uint32_t turnAngle = 0;
-    uint32_t currentHeading = 0;
-    uint32_t heading;
+    uint32_t turnAngle;
+    uint32_t readableHeading;
+    uint32_t heading360;
     int16_t turnRate;
+    const int32_t turnAngle45 = 0x20000000;
+    const int32_t turnAngle180 = turnAngle45*4;
     int16_t gyroOffset;
     uint16_t gyroLastUpdate = 0;
     const int MAX_SPEED = 400;
+    boolean firstAtLineFlag;
+    Timer atLineTimer;
   public:
     enum class State {init, wait, search, attack, evade, atLine};
     State state = State::init;
@@ -31,17 +35,24 @@ class Robot{
     void update(){
       lineSensors.readCalibrated(lineReadings);
       proxSensors.read();
+      turnSensorUpdate();
+      calculate360degreeheading();
       leftReading = proxSensors.countsFrontWithLeftLeds();
       rightReading = proxSensors.countsFrontWithRightLeds();
+      Serial.print(((((int32_t)turnAngle >> 16) * 360) >> 16));
+      Serial.print(" ");
+      Serial.print(heading360);
+      Serial.print(" ");
     }
     void init(){
       proxSensors.initThreeSensors();
-      lineSensors.initThreeSensors();
+      lineSensors.initFiveSensors();
       Serial.begin(9600);
-      //turnSensorSetup();
-      //Serial.print("Setup Complete - Waiting for Button");
+      turnSensorSetup();
+      Serial.print("Setup Complete - Waiting for Button");
       ledRed(1);
       state = State::wait;
+      firstAtLineFlag = false;
     }
     void calibrateLineSensors(){
       ledYellow(1);
@@ -88,15 +99,60 @@ class Robot{
       }
     }
     void checkLine(){
-      if(lineReadings[0] < 50 || lineReadings[1] < 50 || lineReadings[2] < 50){
+      if(lineReadings[0] < 50 || lineReadings[2] < 50 || lineReadings[4] < 50){
         if(state != State::init && state != State::wait){
           turnTimer.reset();
           state = State::atLine;
         }
       }
     }
-    void turn180deg(){
-      turnTimer.startTimerC();
+    void calculate360degreeheading()
+    {
+      if(readableHeading < 0)
+      {
+        heading360 = 180-readableHeading;
+      }
+      else
+      {
+        heading360 = 180+readableHeading;
+      }
+    }
+    void atLineFinish(Robot::State s)
+    {
+      atLineTimer.reset();
+      state = s;   
+    }
+    void atLine(){
+      atLineTimer.startTimerC();
+      if(atLineTimer.timeElapsed() < 175){
+        motors.setSpeeds(-400,-400);
+        return;
+      }
+      turnDeg(100);
+    }
+    void turnDeg(uint32_t turn){
+      const uint32_t initialHeading = heading360;
+      uint32_t toHeading = 0;
+      //go backwards a little bit before turning
+      //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
+      //motors.setSpeeds(-300,-300);
+      //delay(200);
+        while(heading360 != toHeading)
+        {
+          if(initialHeading + turn > 359)
+          {
+            toHeading = initialHeading + turn - 360;
+          }
+          else
+          {
+            toHeading = initialHeading + turn;
+          }
+          turnSensorUpdate();
+          motors.setSpeeds(-400,400);
+        }
+      state = State::search;
+      
+      /*turnTimer.startTimerC();
       if(turnTimer.timeElapsed() < 100){
         motors.setSpeeds(-400,-400);
       }
@@ -109,17 +165,22 @@ class Robot{
       else{
         turnTimer.reset();
         state = State::search;
-      }
+      }**/
+    }
+    void gambit()
+    {
+      
     }
     void search(){
-      motors.setSpeeds(100,300);
-      if(leftReading > 2 || rightReading > 2){
+      motors.setSpeeds(200,400);
+      if(leftReading > 1 || rightReading > 1){
          state = State::attack;
       }
+      atLineTimer.reset();
     }
     void attack(){
       //While attacking account for opponent robot movement to adjust to directly hit the opponent.
-      int deriv = 50; //to adjust intensity of motors offset for a turn
+      int deriv = 80; //to adjust intensity of motors offset for a turn
       //Maybe we should use raw proximity sensor values if we can?
       //Maybe we don't even need to use shitty prox sensors since the kit competition has already passed?
       leftReading = proxSensors.countsFrontWithLeftLeds();
@@ -141,13 +202,6 @@ class Robot{
     }
     void displayProx(){
       Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
-    }
-    void updateDirection()
-    {
-      turnSensorSetup();
-      turnSensorReset();
-      turnSensorUpdate();
-      heading += turnAngle;
     }
     void turnSensorSetup()
     {
@@ -230,5 +284,7 @@ class Robot{
       // (0.07 dps/digit) * (1/1000000 s/us) * (2^29/45 unit/degree)
       // = 14680064/17578125 unit/(digit*us)
       turnAngle += (int64_t)d * 14680064 / 17578125;
+      readableHeading = (((int32_t)turnAngle >> 16) * 360) >> 16;
+      calculate360degreeheading();
     }
 };

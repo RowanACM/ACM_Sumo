@@ -27,7 +27,7 @@ void loop() {
       robot.wait();
       break;
     case Robot::State::atLine:
-      robot.turn180deg();
+      robot.atLine();
       break;
     case Robot::State::search:
       robot.search();
@@ -36,5 +36,4 @@ void loop() {
       robot.attack();
       break;
   }
-  robot.displayProx();
 }
