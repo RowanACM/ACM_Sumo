@@ -53,8 +53,4 @@ void setup() {
   //"O5 L8 B- L4 A-B-A-B-A-B-A-B-A-B-A-B-A- L2 B- O4 L8 E- L4 FG-A-B- O5 D- O4 L2 B- L4 A- L8 G- L4 E-G- L2 A- L8 FE- L2 D- L8 R E- L4 FG-A-B- O5 D- O4 L2 B- R4 L8 A- L4 G-E-G- L1 A- L8 F E-D-"
   //"O4 L8 E- L4 FG-A-B- O5 D- O4 L2 B- L4 A- L8 G- L4 E-G- L2 A- L8 FE- L2 D- L8 R E- L4 FG-A-B- O5 D- O4 L2 B- R4 L8 A- L4 G-E-G- L1 A-");
 }
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
-}
+void loop() {}
