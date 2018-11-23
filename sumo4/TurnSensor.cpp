@@ -99,7 +99,17 @@ void TurnSensor::turnSensorReset()
   gyroLastUpdate = micros();
   turnAngle = 0;
 }
-
+void TurnSensor::calculate360degreeheading()
+{
+  if(readableHeading < 0)
+  {
+    heading360 = 180-readableHeading;
+  }
+  else
+  {
+    heading360 = 180+readableHeading;
+  }
+}
 // Read the gyro and update the angle.  This should be called as
 // frequently as possible while using the gyro to do turns.
 void TurnSensor::turnSensorUpdate()
@@ -127,4 +137,6 @@ void TurnSensor::turnSensorUpdate()
   // (0.07 dps/digit) * (1/1000000 s/us) * (2^29/45 unit/degree)
   // = 14680064/17578125 unit/(digit*us)
   turnAngle += (int64_t)d * 14680064 / 17578125;
+  readableHeading = (((int32_t)turnAngle >> 16) * 360) >> 16;
+  calculate360degreeheading();
 }

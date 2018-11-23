@@ -6,14 +6,6 @@ class Robot{
     int lineReadings[5];
     int leftReading;
     int rightReading;
-    uint32_t turnAngle;
-    uint32_t readableHeading;
-    uint32_t heading360;
-    int16_t turnRate;
-    const int32_t turnAngle45 = 0x20000000;
-    const int32_t turnAngle180 = turnAngle45*4;
-    int16_t gyroOffset;
-    uint16_t gyroLastUpdate = 0;
     const int MAX_SPEED = 400;
     boolean firstAtLineFlag;
     Timer atLineTimer;
@@ -30,25 +22,26 @@ class Robot{
 
     Timer waitTimer;
     Timer turnTimer;
+    TurnSensor turnSen;
 
     
     void update(){
       lineSensors.readCalibrated(lineReadings);
       proxSensors.read();
-      turnSensorUpdate();
-      calculate360degreeheading();
+      turnSen.turnSensorUpdate();
+      turnSen.calculate360degreeheading();
       leftReading = proxSensors.countsFrontWithLeftLeds();
       rightReading = proxSensors.countsFrontWithRightLeds();
-      Serial.print(((((int32_t)turnAngle >> 16) * 360) >> 16));
+      Serial.print(turnSen.readableHeading);
       Serial.print(" ");
-      Serial.print(heading360);
+      Serial.print(turnSen.heading360);
       Serial.print(" ");
     }
     void init(){
       proxSensors.initThreeSensors();
       lineSensors.initFiveSensors();
       Serial.begin(9600);
-      turnSensorSetup();
+      turnSen.turnSensorSetup();
       Serial.print("Setup Complete - Waiting for Button");
       ledRed(1);
       state = State::wait;
@@ -106,17 +99,6 @@ class Robot{
         }
       }
     }
-    void calculate360degreeheading()
-    {
-      if(readableHeading < 0)
-      {
-        heading360 = 180-readableHeading;
-      }
-      else
-      {
-        heading360 = 180+readableHeading;
-      }
-    }
     void atLineFinish(Robot::State s)
     {
       atLineTimer.reset();
@@ -131,13 +113,13 @@ class Robot{
       turnDeg(100);
     }
     void turnDeg(uint32_t turn){
-      const uint32_t initialHeading = heading360;
+      const uint32_t initialHeading = turnSen.heading360;
       uint32_t toHeading = 0;
       //go backwards a little bit before turning
       //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
       //motors.setSpeeds(-300,-300);
       //delay(200);
-        while(heading360 != toHeading)
+        while(turnSen.heading360 != toHeading)
         {
           if(initialHeading + turn > 359)
           {
@@ -147,7 +129,7 @@ class Robot{
           {
             toHeading = initialHeading + turn;
           }
-          turnSensorUpdate();
+          turnSen.turnSensorUpdate();
           motors.setSpeeds(-400,400);
         }
       state = State::search;
@@ -202,89 +184,5 @@ class Robot{
     }
     void displayProx(){
       Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
-    }
-    void turnSensorSetup()
-    {
-      Wire.begin();
-      gyro.init();
-    
-      // 800 Hz output data rate,
-      // low-pass filter cutoff 100 Hz
-      gyro.writeReg(L3G::CTRL1, 0b11111111);
-    
-      // 2000 dps full scale
-      gyro.writeReg(L3G::CTRL4, 0b00100000);
-    
-      // High-pass filter disabled
-      gyro.writeReg(L3G::CTRL5, 0b00000000);
-    
-      lcd.clear();
-      lcd.print(F("Gyro cal"));
-    
-      // Turn on the yellow LED in case the LCD is not available.
-      ledYellow(1);
-    
-      // Delay to give the user time to remove their finger.
-      delay(500);
-    
-      // Calibrate the gyro.
-      int32_t total = 0;
-      for (uint16_t i = 0; i < 1024; i++)
-      {
-        // Wait for new data to be available, then read it.
-        while(!gyro.readReg(L3G::STATUS_REG) & 0x08);
-        gyro.read();
-    
-        // Add the Z axis reading to the total.
-        total += gyro.g.z;
-      }
-      ledYellow(0);
-      gyroOffset = total / 1024;
-    
-      // Display the angle (in degrees from -180 to 180) until the
-      // user presses A.
-      lcd.clear();
-      turnSensorReset();
-      while (!buttonA.getSingleDebouncedRelease())
-      {
-        turnSensorUpdate();
-        lcd.gotoXY(0, 0);
-        lcd.print((((int32_t)turnAngle >> 16) * 360) >> 16);
-        lcd.print(F("   "));
-      }
-      lcd.clear();
-    }
-    void turnSensorReset()
-    {
-      gyroLastUpdate = micros();
-      turnAngle = 0;
-    }
-    void turnSensorUpdate()
-    {
-      // Read the measurements from the gyro.
-      gyro.read();
-      turnRate = gyro.g.z - gyroOffset;
-    
-      // Figure out how much time has passed since the last update (dt)
-      uint16_t m = micros();
-      uint16_t dt = m - gyroLastUpdate;
-      gyroLastUpdate = m;
-    
-      // Multiply dt by turnRate in order to get an estimation of how
-      // much the robot has turned since the last update.
-      // (angular change = angular velocity * time)
-      int32_t d = (int32_t)turnRate * dt;
-    
-      // The units of d are gyro digits times microseconds.  We need
-      // to convert those to the units of turnAngle, where 2^29 units
-      // represents 45 degrees.  The conversion from gyro digits to
-      // degrees per second (dps) is determined by the sensitivity of
-      // the gyro: 0.07 degrees per second per digit.
-      //
-      // (0.07 dps/digit) * (1/1000000 s/us) * (2^29/45 unit/degree)
-      // = 14680064/17578125 unit/(digit*us)
-      turnAngle += (int64_t)d * 14680064 / 17578125;
-      readableHeading = (((int32_t)turnAngle >> 16) * 360) >> 16;
-      calculate360degreeheading();
     }
 };

@@ -22,9 +22,12 @@ class TurnSensor
     void turnSensorSetup();
     void turnSensorReset();
     void turnSensorUpdate();
+    void calculate360degreeheading();
     uint32_t turnAngle;
     int16_t turnRate;
     int16_t gyroOffset;
+    uint32_t readableHeading;
+    uint32_t heading360;
     uint16_t gyroLastUpdate;
     
     // These objects must be defined in your sketch.
