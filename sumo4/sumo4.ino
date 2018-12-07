@@ -1,7 +1,8 @@
 #include <Wire.h>
 #include <Zumo32U4.h>
 #include "TurnSensor.h"
-#include "Robot.cpp"
+#include "Robot.h"
+#define State Robot::State
 
 Zumo32U4ProximitySensors proxSensors;
 Zumo32U4Motors motors;
@@ -20,19 +21,19 @@ void loop() {
   robot.update();
   robot.checkLine();
   switch(robot.state){
-    case Robot::State::init:
+    case State::init:
       robot.init();
       break;
-    case Robot::State::wait:
+    case State::wait:
       robot.wait();
       break;
-    case Robot::State::atLine:
+    case State::atLine:
       robot.atLine();
       break;
-    case Robot::State::search:
+    case State::search:
       robot.search();
       break;
-    case Robot::State::attack:
+    case State::attack:
       robot.attack();
       break;
   }

@@ -1,4 +1,9 @@
 #pragma once
+
+#include <Wire.h>
+#include "Timer.h"
+#include <Zumo32U4.h>
+
 class Robot{
     int lineReadings[5];
     int leftReading;
@@ -27,10 +32,11 @@ class Robot{
     void calibrateLineSensors();
     void wait();
     void checkLine();
+    void atLineFinish(State s);
     void atLine();
     void turnDeg(uint32_t turn);
     void gambit();
     void search();
     void attack();
     void displayProx();
-}
+};
