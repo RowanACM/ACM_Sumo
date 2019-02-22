@@ -23,6 +23,9 @@ void loop() {
     case Robot::State::init:
       robot.init();
       break;
+    case Robot::State::initMove:
+      robot.initMove();
+      break;
     case Robot::State::wait:
       robot.wait();
       break;

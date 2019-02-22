@@ -7,10 +7,9 @@ class Robot{
     int leftReading;
     int rightReading;
     const int MAX_SPEED = 400;
-    boolean firstAtLineFlag;
-    Timer atLineTimer;
+    
   public:
-    enum class State {init, wait, search, attack, evade, atLine};
+    enum class State {init, initMove, wait, search, attack, evade, atLine};
     State state = State::init;
     Zumo32U4ProximitySensors proxSensors;
     Zumo32U4Motors motors;
@@ -22,6 +21,8 @@ class Robot{
 
     Timer waitTimer;
     Timer turnTimer;
+    Timer atLineTimer;
+    Timer initMoveTimer;
     TurnSensor turnSen;
 
     
@@ -45,7 +46,18 @@ class Robot{
       Serial.print("Setup Complete - Waiting for Button");
       ledRed(1);
       state = State::wait;
-      firstAtLineFlag = false;
+    }
+    void initMove(){
+      initMoveTimer.startTimerC();
+      if(initMoveTimer.timeElapsed() <= 250)
+      {
+        motors.setSpeeds(400,400);
+      }
+      else
+      {
+        turnDeg(220);
+        state = State::search;
+      }
     }
     void calibrateLineSensors(){
       ledYellow(1);
@@ -85,7 +97,7 @@ class Robot{
       }
       if(waitTimer.timeElapsed() > 5000){
         waitTimer.reset();
-        state = State::search;
+        state = State::initMove;
         ledYellow(0);
         ledGreen(1);
         lcd.clear();
@@ -106,7 +118,7 @@ class Robot{
     }
     void atLine(){
       atLineTimer.startTimerC();
-      if(atLineTimer.timeElapsed() < 175){
+      if(atLineTimer.timeElapsed() < 200){
         motors.setSpeeds(-400,-400);
         return;
       }
@@ -121,37 +133,21 @@ class Robot{
       //delay(200);
         while(turnSen.heading360 != toHeading)
         {
-          if(initialHeading + turn > 359)
+          if(turn > 0)
           {
-            toHeading = initialHeading + turn - 360;
+            if(initialHeading + turn > 359)
+            {
+              toHeading = initialHeading + turn - 360;
+            }
+            else
+            {
+              toHeading = initialHeading + turn;
+            }
+             turnSen.turnSensorUpdate();
+             motors.setSpeeds(400,-400);
           }
-          else
-          {
-            toHeading = initialHeading + turn;
-          }
-          turnSen.turnSensorUpdate();
-          motors.setSpeeds(-400,400);
         }
-      state = State::search;
-      
-      /*turnTimer.startTimerC();
-      if(turnTimer.timeElapsed() < 100){
-        motors.setSpeeds(-400,-400);
-      }
-      if(turnTimer.timeElapsed() >= 100 && turnTimer.timeElapsed() < 300){
-        motors.setSpeeds(-300,300);
-      }
-      else if(turnTimer.timeElapsed() >= 300 && turnTimer.timeElapsed() < 500){
-        motors.setSpeeds(300,300);
-      }
-      else{
-        turnTimer.reset();
         state = State::search;
-      }**/
-    }
-    void gambit()
-    {
-      
     }
     void search(){
       motors.setSpeeds(200,400);
