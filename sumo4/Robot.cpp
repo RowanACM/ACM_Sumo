@@ -6,10 +6,12 @@ class Robot{
     int lineReadings[5];
     int leftReading;
     int rightReading;
+    uint32_t turn;
+    uint32_t toHeading = 90;
     const int MAX_SPEED = 400;
     
   public:
-    enum class State {init, initMove, wait, search, attack, evade, atLine};
+    enum class State {init, initMove, wait, search, attack, evade, atLine, turnDeg};
     State state = State::init;
     Zumo32U4ProximitySensors proxSensors;
     Zumo32U4Motors motors;
@@ -33,10 +35,6 @@ class Robot{
       turnSen.calculate360degreeheading();
       leftReading = proxSensors.countsFrontWithLeftLeds();
       rightReading = proxSensors.countsFrontWithRightLeds();
-      Serial.print(turnSen.readableHeading);
-      Serial.print(" ");
-      Serial.print(turnSen.heading360);
-      Serial.print(" ");
     }
     void init(){
       proxSensors.initThreeSensors();
@@ -55,8 +53,9 @@ class Robot{
       }
       else
       {
-        turnDeg(220);
-        state = State::search;
+        turn = 60;
+        //calcToHeading();
+        state = State::turnDeg;
       }
     }
     void calibrateLineSensors(){
@@ -122,32 +121,36 @@ class Robot{
         motors.setSpeeds(-400,-400);
         return;
       }
-      turnDeg(100);
+      turn = 60;
+      //calcToHeading();
+      state = State::turnDeg;
     }
-    void turnDeg(uint32_t turn){
+    void calcToHeading()
+    {
       const uint32_t initialHeading = turnSen.heading360;
-      uint32_t toHeading = 0;
+        if(initialHeading + turn > 359)
+        {
+           toHeading = initialHeading + turn - 360;
+        }
+        else
+        {
+           toHeading = initialHeading + turn;
+        }
+    }
+    void turnDeg(){
       //go backwards a little bit before turning
       //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
       //motors.setSpeeds(-300,-300);
       //delay(200);
-        while(turnSen.heading360 != toHeading)
+        
+        int currentHeading = turnSen.readableHeading;
+        lcd.print(currentHeading);
+        motors.setSpeeds(400,-400);
+        
+        if(currentHeading == toHeading)
         {
-          if(turn > 0)
-          {
-            if(initialHeading + turn > 359)
-            {
-              toHeading = initialHeading + turn - 360;
-            }
-            else
-            {
-              toHeading = initialHeading + turn;
-            }
-             turnSen.turnSensorUpdate();
-             motors.setSpeeds(400,-400);
-          }
+          state = State::search;
         }
-        state = State::search;
     }
     void search(){
       motors.setSpeeds(200,400);

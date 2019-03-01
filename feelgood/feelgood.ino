@@ -1,6 +1,6 @@
 #include <PololuBuzzer.h>
 PololuBuzzer buzzer;
-const char FEELGOOD[] PROGMEM = "L4 V9 T130"
+const char FEELGOOD[] PROGMEM = "L4 V8 T130"
   "O2 E- L8 R E-FG- R B R L4 B-"
   "O4 L8 F R L4 E-"
   "O2 R16 L4 A- L8 RA- BB-RG-R L4 E-"

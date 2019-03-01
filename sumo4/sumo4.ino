@@ -26,6 +26,9 @@ void loop() {
     case Robot::State::initMove:
       robot.initMove();
       break;
+    case Robot::State::turnDeg:
+      robot.turnDeg();
+      break;
     case Robot::State::wait:
       robot.wait();
       break;
