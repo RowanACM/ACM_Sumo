@@ -2,7 +2,6 @@
 #include <Zumo32U4.h>
 #include "TurnSensor.h"
 #include "Timer.h"
-
 class Robot{
     int lineReadings[5];
     int leftReading;
@@ -55,7 +54,6 @@ class Robot{
       else
       {
         turn = 60;
-        //calcToHeading();
         state = State::turnDeg;
       }
     }
@@ -91,7 +89,6 @@ class Robot{
         waitTimer.startTimer();
       }
       if(waitTimer.timeElapsed() < 5000){ //will return 0 if not set
-        //lcd.clear();
         lcd.print(5000 - waitTimer.timeElapsed());
         lcd.gotoXY(0,0);
       }
@@ -103,29 +100,15 @@ class Robot{
         lcd.clear();
       }
     }
-  }
-}
-void Robot::atLineFinish(State s)
-{
-  atLineTimer.reset();
-  state = s;   
-}
-void Robot::atLine(){
-  atLineTimer.startTimerC();
-  if(atLineTimer.timeElapsed() < 175){
-    motors.setSpeeds(-400,-400);
-    return;
-  }
-  turnDeg(100);
-}
-void Robot::turnDeg(uint32_t turn){
-  const uint32_t initialHeading = turnSen.heading360;
-  uint32_t toHeading = 0;
-  //go backwards a little bit before turning
-  //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
-  //motors.setSpeeds(-300,-300);
-  //delay(200);
-    while(turnSen.heading360 != toHeading)
+    void checkLine(){
+      if(lineReadings[0] < 50 || lineReadings[2] < 50 || lineReadings[4] < 50){
+        if(state != State::init && state != State::wait){
+          turnTimer.reset();
+          state = State::atLine;
+        }
+      }
+    }
+    void atLineFinish(Robot::State s)
     {
       atLineTimer.reset();
       state = s;   
@@ -141,7 +124,7 @@ void Robot::turnDeg(uint32_t turn){
       state = State::turnDeg;
     }
     void calcToHeading()
-    
+    {
       const uint32_t initialHeading = turnSen.heading360;
         if(initialHeading + turn > 359)
         {
@@ -154,13 +137,10 @@ void Robot::turnDeg(uint32_t turn){
     }
     void turnDeg(){
       //go backwards a little bit before turning
-      //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
-      //motors.setSpeeds(-300,-300);
-      //delay(200);
         
         int currentHeading = turnSen.readableHeading;
         lcd.print(currentHeading);
-        motors.setSpeeds(400,-400);
+        motors.setSpeeds(200,-200);
         
         if(currentHeading == toHeading)
         {
@@ -188,65 +168,15 @@ void Robot::turnDeg(uint32_t turn){
       }
       else if(leftReading > rightReading)
       {
-        toHeading = initialHeading + turn - 360;
+        int leftMotorSpeed = (((rightReading - leftReading)*deriv) + MAX_SPEED);
+        motors.setSpeeds(leftMotorSpeed , MAX_SPEED);
       }
-      else
+      else if(leftReading == rightReading)
       {
-        toHeading = initialHeading + turn;
+        motors.setSpeeds(MAX_SPEED , MAX_SPEED);
       }
-      turnSen.turnSensorUpdate();
-      motors.setSpeeds(-400,400);
     }
-  state = State::search;
-  
-  /*turnTimer.startTimerC();
-  if(turnTimer.timeElapsed() < 100){
-    motors.setSpeeds(-400,-400);
-  }
-  if(turnTimer.timeElapsed() >= 100 && turnTimer.timeElapsed() < 300){
-    motors.setSpeeds(-300,300);
-  }
-  else if(turnTimer.timeElapsed() >= 300 && turnTimer.timeElapsed() < 500){
-    motors.setSpeeds(300,300);
-  }
-  else{
-    turnTimer.reset();
-    state = State::search;
-  }**/
-}
-void Robot::gambit()
-{
-  
-}
-void Robot::search(){
-  motors.setSpeeds(200,400);
-  if(leftReading > 1 || rightReading > 1){
-     state = State::attack;
-  }
-  atLineTimer.reset();
-}
-void Robot::attack(){
-  //While attacking account for opponent robot movement to adjust to directly hit the opponent.
-  int deriv = 80; //to adjust intensity of motors offset for a turn
-  //Maybe we should use raw proximity sensor values if we can?
-  //Maybe we don't even need to use shitty prox sensors since the kit competition has already passed?
-  leftReading = proxSensors.countsFrontWithLeftLeds();
-  rightReading = proxSensors.countsFrontWithRightLeds();
-  if(leftReading < rightReading)
-  {
-    int rightMotorSpeed = (((leftReading - rightReading)*deriv) + MAX_SPEED);
-    motors.setSpeeds(MAX_SPEED , rightMotorSpeed);
-  }
-  else if(leftReading > rightReading)
-  {
-    int leftMotorSpeed = (((rightReading - leftReading)*deriv) + MAX_SPEED);
-    motors.setSpeeds(leftMotorSpeed , MAX_SPEED);
-  }
-  else if(leftReading == rightReading)
-  {
-    motors.setSpeeds(MAX_SPEED , MAX_SPEED);
-  }
-}
-void Robot::displayProx(){
-  Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
-}
+    void displayProx(){
+      Serial.print(String(leftReading)+ "  " + String(rightReading) + "\n");
+    }
+};
