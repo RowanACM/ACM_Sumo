@@ -43,6 +43,7 @@ class Robot{
       turnSen.turnSensorSetup();
       Serial.print("Setup Complete - Waiting for Button");
       ledRed(1);
+      turnSen.turnSensorReset();
       state = State::wait;
     }
     void initMove(){
@@ -138,11 +139,6 @@ class Robot{
         }
     }
     void turnDeg(){
-      //go backwards a little bit before turning
-      //((turnTimer.timeElapsed() < 400) ? motors.setSpeeds(-400,-400) : motors.setSpeeds(0,0));
-      //motors.setSpeeds(-300,-300);
-      //delay(200);
-        
         int currentHeading = turnSen.readableHeading;
         motors.setSpeeds(200,-200);
         
