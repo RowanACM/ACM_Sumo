@@ -144,8 +144,7 @@ class Robot{
       //delay(200);
         
         int currentHeading = turnSen.readableHeading;
-        lcd.print(currentHeading);
-        motors.setSpeeds(400,-400);
+        motors.setSpeeds(200,-200);
         
         if(currentHeading == toHeading)
         {
